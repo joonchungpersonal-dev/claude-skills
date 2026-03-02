@@ -1,24 +1,23 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>reddit-post</title>
+<html><head>
+<meta charset="utf-8">
+<title>Reddit Post Preview</title>
 <style>
-body { max-width: 740px; margin: 40px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, segoe ui, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1b; background: #fff; }
-h1 { font-size: 1.5em; border-bottom: 1px solid #edeff1; padding-bottom: 8px; }
-h2 { font-size: 1.25em; color: #1a1a1b; margin-top: 1.5em; }
-h3 { font-size: 1.1em; }
-table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+body { max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: -apple-system, sans-serif; line-height: 1.6; color: #1a1a1b; }
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.2em; border-bottom: 1px solid #edeff1; padding-bottom: 4px; }
+h3 { font-size: 1.05em; }
+table { border-collapse: collapse; width: 100%%; margin: 1em 0; }
 th, td { border: 1px solid #edeff1; padding: 8px 12px; text-align: left; }
-th { background: #f6f7f8; font-weight: 600; }
+th { background: #f6f7f8; }
 code { background: #f6f7f8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
 pre { background: #f6f7f8; padding: 12px; border-radius: 4px; overflow-x: auto; }
 pre code { background: none; padding: 0; }
-a { color: #0079d3; text-decoration: none; }
-a:hover { text-decoration: underline; }
+blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 16px; color: #666; }
+a { color: #0079d3; }
 strong { font-weight: 600; }
-em { font-style: italic; }
-hr { border: none; border-top: 1px solid #edeff1; margin: 2em 0; }
-ul, ol { padding-left: 2em; }
-li { margin: 0.25em 0; }
-</style></head><body>
+</style>
+</head><body>
 <h1>I built a veracity-checking skill for Claude Code. Running it on itself was humbling — here's what I learned.</h1>
 <p>I'm a researcher who uses Claude Code daily (sleep science background, University of Miami). As a scientist, factual accuracy isn't optional — a wrong citation or a fabricated statistic in a skill file means every downstream user inherits that error.</p>
 <p>So I built <code>/veracity-tweaked-555</code>, a Claude Code skill that decomposes documents into atomic claims and verifies each one via web search — 16 parallel agents across 4 waves per run. Built in collaboration with Claude Code (Opus 4.6): Claude drafted the code, I designed the methodology and verified accuracy by running the tool on everything, including this post. What I found made me rethink how much I trust any skill file that hasn't been audited.</p>
@@ -49,7 +48,7 @@ li { margin: 0.25em 0; }
 <h2>Running it on my own skills</h2>
 <p>Encouraged by the self-audit, I ran veracity checks on all 6 of my Claude Code skills before releasing them publicly. The results:</p>
 <ul>
-<li>The <code>/grill</code> skill — a composite code review tool built on GPTLens (Hu et al.), Trail of Bits' <a href="https://github.com/trailofbits/claude-code-config">claude-code-config</a>, obra's <a href="https://github.com/obra/superpowers">superpowers</a>, and IIA/OWASP standards; Claude Code consolidated the sources, I designed the 2-agent architecture — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
+<li>The <code>/grill</code> skill — my extension of Boris Cherny's "grill me" prompting technique (from his <a href="https://www.threads.com/@boris_cherny/post/DUMZxTWElFm">Claude Code tips</a>), formalized into a 2-agent skill with GPTLens (Hu et al.), Trail of Bits' <a href="https://github.com/trailofbits/claude-code-config">claude-code-config</a>, obra's <a href="https://github.com/obra/superpowers">superpowers</a>, and IIA/OWASP standards — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
 <li>The same skill misattributed the 5C audit framework to COSO (a different standards body) instead of IIA Standards 2410/2420. This error appeared in multiple locations across the file.</li>
 <li>The <code>/context-engineer</code> skill had internal inconsistencies — the prose said "5-10K tokens" while a table in the same file said "5-15K tokens" for the same metric.</li>
 </ul>
@@ -125,11 +124,11 @@ li { margin: 0.25em 0; }
 <li><strong>No runtime testing</strong> — I checked registries and APIs for the top findings but didn't execute every code example in every skill.</li>
 </ol>
 <h2>What I'm sharing and why</h2>
-<p>Both skills (<code>/veracity-tweaked-555</code> and <code>/context-engineer</code>) are open source at <a href="https://github.com/joonchungpersonal-dev/claude-skills">joonchungpersonal-dev/claude-skills</a>, along with the full audit results (JSON files + consolidated report) from the community skills audit.</p>
+<p>Both skills (<code>/veracity-tweaked-555</code> and <code>/context-engineer</code>) are open source at <a href="https://github.com/joonchungpersonal-dev/veracity-skills">joonchungpersonal-dev/veracity-skills</a>, along with the full audit results (JSON files + consolidated report) from the community skills audit.</p>
 <p>The most valuable thing I learned is that <strong>self-auditing catches errors that survive human review</strong> — not because you're careless, but because LLM-generated errors are plausible by nature. They read well, sound right, and are sometimes wrong.</p>
 <p>I'm a scientist, not a software engineer — I'm sure people in this community could make the verification faster, the token usage lower, and the convergence tighter. I welcome improvements, forks, and PRs. The methodology matters more to me than the implementation.</p>
 <hr />
-<p><strong>Repo</strong>: <a href="https://github.com/joonchungpersonal-dev/claude-skills">joonchungpersonal-dev/claude-skills</a>
+<p><strong>Repo</strong>: <a href="https://github.com/joonchungpersonal-dev/veracity-skills">joonchungpersonal-dev/veracity-skills</a>
 <strong>Full audit report</strong>: <code>external-audits/results/consolidated-report.md</code>
 <strong>Raw data</strong>: <code>external-audits/results/*.json</code> (all 532 claims with verdicts and evidence)</p>
 <hr />
@@ -138,7 +137,7 @@ li { margin: 0.25em 0; }
 <p><strong>Pre-posting fixes (manual + automated):</strong>
 - Conflated two audit sessions into one timeline — actually two phases (Feb 22: 62→80→84; Mar 1: 74→96.5)
 - Score graph hid the 80→74 regression between v1 and v3 — corrected to show full trajectory
-- <code>/grill</code> attribution credited as "my skill" — corrected to credit Claude Code for the consolidation work
+- <code>/grill</code> attribution corrected — it extends Boris Cherny's "grill me" prompting technique, not built from scratch
 - Fidelity degradation chart (90%→75%→55%→30%) presented precise numbers that were never measured — removed
 - Ensembl species/genome counts conflated — corrected via REST API
 - GPTLens citation year wrong (2024 vs 2023) — corrected
@@ -150,5 +149,4 @@ li { margin: 0.25em 0; }
 - Full audit trail and raw data in the repo</p>
 <p><strong>Remaining caveats:</strong>
 - "91% accuracy" is the "not found to be wrong" rate: (532-49)/532 = 90.8%. Excluding unverifiable claims: 432/481 = 89.8%. I used the more generous framing.
-- "All CWE numbers verified" — we verified what our agents checked, not literally every reference. Softened to "overwhelmingly accurate."</p>
-</body></html>
+- "All CWE numbers verified" — we verified what our agents checked, not literally every reference. Softened to "overwhelmingly accurate."</p></body></html>
