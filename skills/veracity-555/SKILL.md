@@ -402,6 +402,81 @@ Confirm via `AskUserQuestion`.
 ### Steps 1-2: Parse & Read
 Extract target + run count from `$ARGUMENTS`. Read full document.
 
+### Step 2.5: Context Engineering Pre-Flight (runs >= 2)
+
+Skip this step for `runs=1`. For multi-run audits, apply context-engineer patterns to prevent context window overflow and enable crash recovery.
+
+**2.5a. ESTIMATE TOKEN BUDGET:**
+```
+Per-run cost: ~50-80K tokens (Wave 0 + 3 waves of 5 agents + synthesis)
+System overhead: ~20K tokens (system prompt + CLAUDE.md + skill definition)
+Available working context: ~145-170K tokens
+Max runs before overflow (no mitigation): 2-3
+Max runs with disk-as-memory: unlimited
+```
+
+**2.5b. INITIALIZE STATE FILE:**
+
+Write a workflow state file to the paper trail directory. This file must contain everything needed to resume the audit from any run — the Victory Condition is: if the session crashes, a new session can read this file and continue without degradation.
+
+```json
+{
+  "_schema": "context-engineer/workflow-state/v1",
+  "_description": "In progress. Read this file to resume.",
+  "workflow": {
+    "name": "veracity-audit",
+    "goal": "Complete N-run veracity audit",
+    "target_file": "<target path>",
+    "audit_root": "<paper trail directory>",
+    "started": "<ISO-8601>"
+  },
+  "convergence": {
+    "target_score": null,
+    "required_consecutive": null,
+    "consecutive_hits": 0,
+    "converged": false,
+    "convergence_scores": []
+  },
+  "progress": {
+    "current_run": 0,
+    "runs_completed": 0,
+    "current_phase": "initialized",
+    "phases_per_run": ["decomposition", "wave_a", "wave_b", "synthesis", "apply_fixes"]
+  },
+  "history": [],
+  "active_findings": [],
+  "relationships": [],
+  "decisions": [],
+  "score_progression": []
+}
+```
+
+**2.5c. IDENTIFY CHOKEPOINTS:**
+- **The Collector** (post-wave synthesis): 16 agents × 2-5K tokens = 32-80K of findings. Mitigation: agents write to disk, synthesis reads file-by-file.
+- **The Auditor Loop** (multi-run accumulation): Each run adds ~50-80K tokens. Mitigation: checkpoint and compact between runs.
+- **The Growing Log** (veracity-log.json): Grows each run. Mitigation: append only, never read full log mid-audit.
+
+**2.5d. CHECKPOINT PROTOCOL (between every run):**
+
+After each run's fixes are applied, before starting the next run:
+1. **Extract** FACTUAL information → update state file `history[]` with run scores, findings, fixes
+2. **Log** REASONING → update `decisions[]` with rationale for accepted/rejected/deferred findings
+3. **Map** RELATIONAL → update `relationships[]` with regressions, patterns, causal chains
+4. **Verify** IMPERATIVE → goal and constraints are in the skill definition (survives compaction)
+5. **Release** EPHEMERAL → raw agent outputs are saved to disk; OK to lose from context
+6. **Validate** — re-read state file and confirm every key fact from the current run appears in it
+
+If context usage exceeds ~120K tokens after any run, compact with:
+```
+/compact Workflow state is in <state file path>. Current run: N of M.
+Read state file at start of next run. Do not rely on conversation history.
+```
+
+**Recovery** (if session crashes): Start new session with:
+```
+Read <state file path> and continue the veracity audit from run N.
+```
+
 ### Step 3: Execute Runs
 
 For each run R (1 to N):
@@ -416,7 +491,9 @@ For each run R (1 to N):
 
 **3e. CARRY FORWARD**: Re-read updated document, compile deferred findings, merge any M-series entries from B3 into the canonical fact list, log per-run entry.
 
-**3f. CONVERGENCE**: After Run 2+ (requires runs>=4 to activate), delta < 3 two consecutive + no CRITICAL/HIGH → offer early stop.
+**3f. CHECKPOINT**: (runs >= 2) Update state file per Step 2.5d checkpoint protocol. If context is heavy, compact before next run.
+
+**3g. CONVERGENCE**: After Run 2+ (requires runs>=4 to activate), delta < 3 two consecutive + no CRITICAL/HIGH → offer early stop.
 
 ### Step 4: Consolidate
 

@@ -500,3 +500,56 @@ Name the blind spots before the work starts, not after the crash.
 4. **Test with `/clear`.** If you can clear the entire conversation, read your state file, and continue without degradation — your architecture is correct. If you can't, you have hidden state in conversation memory that needs to be externalized. (Caveat: this test proves apparent continuity, not perfect continuity. See "What This Skill Cannot Protect Against.")
 
 5. **The best compaction is the one you don't need.** A well-designed disk-as-memory workflow never hits the compaction threshold because each step starts lean.
+
+---
+
+## Recommended Pairing: Veracity-555
+
+The `veracity-555` multi-agent fact-checking skill is the canonical use case for context engineering. A single 3-run veracity audit deploys 48 agents, consumes 2.4-3M tokens, and produces cross-run findings that reference each other — hitting every chokepoint pattern described above.
+
+### Why They Pair
+
+| Context Engineering Concept | Veracity-555 Manifestation |
+|---|---|
+| The Collector | 16 agents per run, each returning 2-5K tokens of findings |
+| The Auditor Loop | Iterative audit → fix → re-audit until convergence |
+| The Comparator | Pre/post snapshots compared across runs |
+| The Growing Log | veracity-log.json grows each run |
+| RELATIONAL information | "Finding F015 from Run 1 caused a regression in Run 2" |
+| Sawtooth accumulation | Each run accumulates ~50-80K, must compact between runs |
+
+### How They Integrate
+
+Veracity-555 (runs >= 2) automatically applies context-engineer patterns via its **Step 2.5: Context Engineering Pre-Flight**:
+
+1. **Token budget estimation** before first run
+2. **State file initialization** using `context-engineer/workflow-state/v1` schema
+3. **Checkpoint protocol** between every run (extract FACTUAL, log REASONING, map RELATIONAL)
+4. **Compact instruction** when context exceeds 120K tokens
+5. **Recovery command** if session crashes mid-audit
+
+The state file enables the Victory Condition: if the session crashes after Run 3 of a 6-run audit, a new session reads the state file and continues from Run 4 without repeating work or losing cross-run relationships.
+
+### Empirical Results
+
+The first paired deployment (veracity-555 self-audit, 6 runs to convergence):
+
+```
+Runs: 6 | Agents deployed: 19 | Total fixes: 35
+Score progression: 74 → 85 → 91 → 95.7 → 96.1 → 96.5
+Compactions needed: 0
+State file updates: 3
+Peak context estimate: ~130K tokens (within 200K window)
+Anti-patterns avoided: Fat Subagent Returns, I'll Remember, Append Forever
+```
+
+Zero compactions across 6 runs — the disk-as-memory architecture kept each run lean. The state file's `relationships[]` array preserved cross-run causation (e.g., "Run 1 Limitations addition → Run 2 token cost regression") that would have been destroyed by compaction.
+
+### When to Invoke Separately
+
+Use `/context-engineer` independently (without veracity-555) for:
+- Multi-file refactors touching 10+ files
+- Research synthesis reading 20+ papers
+- Any iterative workflow with convergence criteria
+- Post-crash emergency externalization of in-progress work
+- Calibrating token estimates after a workflow completes (Phase 7)

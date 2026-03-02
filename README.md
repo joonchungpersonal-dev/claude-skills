@@ -71,6 +71,17 @@ All three skills are built on the same core architecture:
 
 The context-engineer skill addresses the practical problem that these complex multi-agent workflows can exceed Claude's 200K context window. It provides a framework for externalizing state to disk so workflows can run indefinitely without information loss.
 
+## Skills Pairing: Convergence Loop
+
+The veracity-555 and context-engineer skills are designed to work together. For multi-run audits (`runs >= 2`), veracity-555 automatically applies context-engineer patterns:
+
+- **Pre-flight analysis**: Estimates token budget and identifies chokepoints before the first run
+- **State file**: Writes a `context-engineer/workflow-state/v1` JSON file that tracks scores, findings, relationships, and decisions across runs
+- **Checkpoint protocol**: Between runs, externalizes FACTUAL, REASONING, and RELATIONAL information to disk
+- **Crash recovery**: If a session dies mid-audit, a new session reads the state file and continues from the next run
+
+See [`workflows/convergence-loop.md`](workflows/convergence-loop.md) for a detailed walkthrough using the veracity-555 self-audit (74 → 96.5 over 6 runs, zero compactions) as a worked example.
+
 ## Background
 
 These skills were developed during research on multi-agent fact verification. The veracity-555 skill was self-audited through 6 iterative runs, starting at a veracity score of 74/100 and converging to 96.5/100 after 35 fixes. Key findings from the self-audit:
