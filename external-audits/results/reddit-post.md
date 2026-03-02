@@ -43,13 +43,13 @@ I solved this by building a companion skill called `/context-engineer` that pred
 
 ## Running it on my own skills
 
-Encouraged by the self-audit, I ran veracity checks on all 6 of my Claude Code skills before releasing them publicly. The results:
+Encouraged by the self-audit, I ran veracity checks on my other Claude Code skills before releasing them publicly. The results:
 
-- The `/grill` skill — my extension of Boris Cherny's "grill me" prompting technique (from his [Claude Code tips](https://www.threads.com/@boris_cherny/post/DUMZxTWElFm)), formalized into a 2-agent skill with GPTLens (Hu et al.), Trail of Bits' [claude-code-config](https://github.com/trailofbits/claude-code-config), obra's [superpowers](https://github.com/obra/superpowers), and IIA/OWASP standards — had a **fabricated paper title** in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.
-- The same skill misattributed the 5C audit framework to COSO (a different standards body) instead of IIA Standards 2410/2420. This error appeared in multiple locations across the file.
+- One skill had a **fabricated paper title** in its attribution section. The citation looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.
+- The same skill misattributed an audit framework to the wrong standards body. This error appeared in multiple locations across the file.
 - The `/context-engineer` skill had internal inconsistencies — the prose said "5-10K tokens" while a table in the same file said "5-15K tokens" for the same metric.
 
-12 total fixes across 6 skills. All passed at 95+ on 3 consecutive runs after corrections.
+12 total fixes across all skills. All passed at 95+ on 3 consecutive runs after corrections.
 
 The takeaway: **I am not immune to this, and I don't think anyone is.** If you're writing Claude Code skills, you almost certainly have claims in your SKILL.md files that you'd want to correct. Not because you were careless, but because LLMs generate plausible-sounding facts that pass human review.
 
@@ -120,7 +120,7 @@ Claude Code (Opus 4.6) drafted the first versions of this post. I then ran the v
 **Pre-posting fixes (manual + automated):**
 - Conflated two audit sessions into one timeline — actually two phases (Feb 22: 62→80→84; Mar 1: 74→96.5)
 - Score graph hid the 80→74 regression between v1 and v3 — corrected to show full trajectory
-- `/grill` attribution corrected — it extends Boris Cherny's "grill me" prompting technique, not built from scratch
+- Skill attribution errors corrected throughout
 - Fidelity degradation chart (90%→75%→55%→30%) presented precise numbers that were never measured — removed
 - Ensembl species/genome counts conflated — corrected via REST API
 - GPTLens citation year wrong (2024 vs 2023) — corrected

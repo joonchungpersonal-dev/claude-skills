@@ -46,13 +46,13 @@ strong { font-weight: 600; }
 <p>Claude's diagnosis was that <strong>relational information</strong> — causal chains, cross-references, multi-step dependencies — is harder to preserve in a summary than isolated facts. I haven't verified this rigorously, but it resonated with my sociology training: meaning arises from the connections between things, not from the things themselves. It would explain what I observed: an agent that can recall individual findings but can't reason about how they connect.</p>
 <p>I solved this by building a companion skill called <code>/context-engineer</code> that predicts overflow before it happens and externalizes relational state to JSON files on disk. The design test: if you can <code>/clear</code> your entire conversation and resume from the state file alone, the architecture is correct. If you can't, you're still depending on context that will eventually be compressed away.</p>
 <h2>Running it on my own skills</h2>
-<p>Encouraged by the self-audit, I ran veracity checks on all 6 of my Claude Code skills before releasing them publicly. The results:</p>
+<p>Encouraged by the self-audit, I ran veracity checks on my other Claude Code skills before releasing them publicly. The results:</p>
 <ul>
-<li>The <code>/grill</code> skill — my extension of Boris Cherny's "grill me" prompting technique (from his <a href="https://www.threads.com/@boris_cherny/post/DUMZxTWElFm">Claude Code tips</a>), formalized into a 2-agent skill with GPTLens (Hu et al.), Trail of Bits' <a href="https://github.com/trailofbits/claude-code-config">claude-code-config</a>, obra's <a href="https://github.com/obra/superpowers">superpowers</a>, and IIA/OWASP standards — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
-<li>The same skill misattributed the 5C audit framework to COSO (a different standards body) instead of IIA Standards 2410/2420. This error appeared in multiple locations across the file.</li>
+<li>One skill had a <strong>fabricated paper title</strong> in its attribution section. The citation looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
+<li>The same skill misattributed an audit framework to the wrong standards body. This error appeared in multiple locations across the file.</li>
 <li>The <code>/context-engineer</code> skill had internal inconsistencies — the prose said "5-10K tokens" while a table in the same file said "5-15K tokens" for the same metric.</li>
 </ul>
-<p>12 total fixes across 6 skills. All passed at 95+ on 3 consecutive runs after corrections.</p>
+<p>12 total fixes across all skills. All passed at 95+ on 3 consecutive runs after corrections.</p>
 <p>The takeaway: <strong>I am not immune to this, and I don't think anyone is.</strong> If you're writing Claude Code skills, you almost certainly have claims in your SKILL.md files that you'd want to correct. Not because you were careless, but because LLMs generate plausible-sounding facts that pass human review.</p>
 <h2>Trying it on community skills</h2>
 <p>After auditing my own work, I wanted to see if the tool could be useful to the broader community. I ran veracity checks across 247 skills from 4 popular repos — not to find fault, but to understand the landscape and see if the patterns I found in my own work showed up elsewhere.</p>
@@ -137,7 +137,7 @@ strong { font-weight: 600; }
 <p><strong>Pre-posting fixes (manual + automated):</strong>
 - Conflated two audit sessions into one timeline — actually two phases (Feb 22: 62→80→84; Mar 1: 74→96.5)
 - Score graph hid the 80→74 regression between v1 and v3 — corrected to show full trajectory
-- <code>/grill</code> attribution corrected — it extends Boris Cherny's "grill me" prompting technique, not built from scratch
+- Skill attribution errors corrected throughout
 - Fidelity degradation chart (90%→75%→55%→30%) presented precise numbers that were never measured — removed
 - Ensembl species/genome counts conflated — corrected via REST API
 - GPTLens citation year wrong (2024 vs 2023) — corrected
