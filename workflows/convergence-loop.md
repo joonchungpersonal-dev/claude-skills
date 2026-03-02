@@ -104,7 +104,7 @@ The veracity-555 SKILL.md was audited by itself, with a convergence target of 95
 | 1 | 74 | — | 283 | 9 | 5 / 7 / 8 / 4 | 15 |
 | 2 | 85 | +11 | 304 | 6 | 0 / 0 / 1 / 3 | 12 |
 | 3 | 91 | +6 | 304 | 1 | 0 / 1 / 3 / 4 | 3 |
-| 4 | 95.7 | +4.5 | 304 | 1 | 0 / 0 / 2 / 5 | 5 |
+| 4 | 95.7 | +4.7 | 304 | 1 | 0 / 0 / 2 / 5 | 5 |
 | 5 | 96.1 | +0.4 | 304 | 1 | 0 / 0 / 1 / 5 | 0 |
 | 6 | 96.5 | +0.4 | 304 | 1 | 0 / 0 / 1 / 4 | 0 |
 
@@ -117,7 +117,7 @@ The first run found the most severe issues. 5 CRITICAL findings included fabrica
 
 But fixes introduced regressions: the new Limitations section contained 2 factual errors (understated token cost, incomplete tool list), caught in Run 2.
 
-**Phase 2 — Diminishing returns (Runs 2-4, deltas +6, +4.5)**:
+**Phase 2 — Diminishing returns (Runs 2-4, deltas +6, +4.7)**:
 Each run found fewer and less severe issues. The dominant pattern shifted from factual errors to framing issues — "SAFE achieves superhuman factuality ratings" was technically overclaimed (should specify "wins 76% of disagreement cases"). These borderline MIXED/MOSTLY TRUE calls are where the noise floor lives.
 
 **Phase 3 — Convergence (Runs 4-6, delta +0.4)**:
