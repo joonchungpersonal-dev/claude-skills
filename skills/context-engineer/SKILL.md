@@ -109,9 +109,9 @@ Step N:
 
 System overhead (always present, cannot be reduced):
 - System prompt + CLAUDE.md: ~8-12K tokens
-- MCP tool definitions: ~5-10K tokens (varies by server count)
+- MCP tool definitions: ~5-15K tokens (varies by server count)
 - Skill definition (if loaded): ~2-6K tokens
-- Extended thinking budget: up to 32K tokens per turn
+- Extended thinking budget: ~2-32K+ tokens per turn (adaptive; can be higher with interleaved thinking during tool use)
 
 **Available working context**: ~145-170K tokens depending on configuration.
 
@@ -171,7 +171,7 @@ A chokepoint is any step where:
 **The Auditor Loop**: Iterating until convergence. Each iteration accumulates: read target → audit → discuss findings → apply fixes → log results → repeat. After 4 iterations of a 50K-token cycle, you've consumed 200K.
 → *Mitigation*: Disk-as-memory architecture (see Phase 4). Compact between iterations.
 
-**The Growing Log**: Appending to a cumulative log (like veracity-log.json). Each read of the log gets more expensive. A 112KB log = ~28K tokens every time it's read.
+**The Growing Log**: Appending to a cumulative log (like veracity-log.json). Each read of the log gets more expensive. A 112KB log = ~28-34K tokens every time it's read (varies by JSON density).
 → *Mitigation*: Don't read the full log. Read only the last entry, or use a summary index file.
 
 ## Phase 3: Fidelity Risk Analysis

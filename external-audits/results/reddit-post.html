@@ -1,0 +1,189 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reddit Post Draft</title></head>
+<body style="background:#1a1a1a;color:#e0e0e0;font-family:-apple-system,system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;font-size:15px"><h1 style="border-bottom:1px solid #444;padding-bottom:8px">I built a veracity-checking skill for Claude Code. Running it on itself was humbling — here's what I learned.</h1>
+<br>
+<p style="margin:8px 0;line-height:1.7">I'm a sleep science researcher (University of Miami) who uses Claude Code daily. As a scientist, factual accuracy isn't optional — citing the wrong paper or using the wrong number can undermine a study. So I built a Claude Code skill called <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/veracity-tweaked-555</code> — in collaboration with Claude Code (Opus 4.6) — to systematically fact-check documents: it decomposes text into atomic claims and verifies each one via web search, using 16 parallel agents across 4 waves (1 decomposition + 3 verification). This entire project — the skills, the audits, the context engineering, this post — was a human-AI collaboration. Claude drafted the code and helped iterate on the implementation; I designed the methodology, made editorial decisions, and verified accuracy by running the veracity tool on everything, including this post.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">The self-audit: 62/100</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">The first thing I did was run it on its own SKILL.md.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">It scored <strong>62 out of 100</strong>.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">The skill I built to catch hallucinations had hallucinated facts in its own documentation. It had fabricated a performance statistic ("3x more accurate" for SAFE, which the paper never claims), inflated a paper's improvement claim ("+35.5%" was actually +5.5% over SOTA), and fabricated an acronym expansion for a real technique. These were claims that read well, sounded right, and were wrong.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">After initial fixes it reached 80, then 84 after a third run. A week later, I ran a more rigorous convergence loop — 6 runs, 19 agents, 35 additional fixes — and it stabilized at 96.5/100. But the path wasn't a smooth climb. The fresh v3 audit actually <em>dropped</em> to 74 — because the v1 fixes had introduced new errors (an understated token cost and an incomplete tool list). Fixing things created new things to fix.</p>
+<br>
+<pre style="background:#1e1e1e;color:#d4d4d4;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5">
+Veracity Score Over Time (9 audit runs)
+100 ┤                                                   ●──── ● 96.5
+ 95 ┤                                             ●  95.7
+ 90 ┤                                       ● 91
+ 85 ┤                  ● 84           ● 85        ▲ v3 convergence
+ 80 ┤        ● 80        ╲                         (6 runs, 35 fixes)
+ 75 ┤                      ╲ ● 74
+ 70 ┤                       ╲╱  ← regression!
+ 65 ┤  ● 62                     (v1 fixes introduced
+ 60 ┤  ▲ v1 self-audit           new errors)
+     └───────────────────────────────────────────────────────
+      Feb 22                 Mar 1
+</pre>
+<br>
+<p style="margin:8px 0;line-height:1.7">That journey taught me more about LLM reliability than any paper I've read. The errors aren't random. They follow patterns: attribution inflation (slightly stronger language than the source warrants), plausible-but-fabricated identifiers (PMIDs, arXiv IDs that look real but point to different papers), and stale statistics presented as current.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">The context engineering problem</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">A single audit run generates ~917K tokens across 16 agents. Claude Code's 200K context window can't hold it. But the real problem isn't size — it's what gets lost when the window compresses.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">When Claude Code compacts your conversation to stay within limits, it performs lossy compression. Regular facts survive reasonably well — names, numbers, function signatures. But <strong>relational information</strong> is the first casualty: causal chains between findings, cross-references, which fix caused which regression. "Finding A contradicts Finding B, which was caused by Fix C from Run 2" — that kind of reasoning gets crushed.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">This is categorically different from losing ephemeral details like timestamps or file paths. Relational context is what makes multi-step reasoning <em>work</em>. Without it, you get an agent that can recall individual facts but can't reason about how they connect.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">I solved this by building a companion skill called <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/context-engineer</code> that predicts overflow before it happens and externalizes relational state to JSON files on disk. The design test: if you can <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/clear</code> your entire conversation and resume from the state file alone, the architecture is correct. If you can't, you're still depending on context that will eventually be compressed away.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">In my experience, after a few compactions the agent loses track of how findings relate to each other — which fix caused which regression, which claim contradicts which other claim. Individual facts survive reasonably well, but the connections between them don't. Externalizing state to disk bypasses this entirely: the JSON file on disk doesn't get compacted.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">Running it on my own skills</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">Encouraged by the self-audit, I ran veracity checks on all 6 of my Claude Code skills before releasing them publicly. The results:</p>
+<br>
+<ul style="margin:8px 0">
+<li style="margin:4px 0">My <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/grill</code> skill — which I built by consolidating patterns from GPTLens (Hu et al.), Trail of Bits' security config, obra/superpowers, and IIA/OWASP standards into a 2-agent code review architecture — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
+<li style="margin:4px 0">The same skill misattributed the 5C audit framework to COSO (a different standards body) instead of IIA Standards 2410/2420. This error appeared in multiple locations across the file.</li>
+<li style="margin:4px 0">My <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/context-engineer</code> skill had internal inconsistencies — the prose said "5-10K tokens" while a table in the same file said "5-15K tokens" for the same metric.</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7">12 total fixes across 6 skills. All passed at 95+ on 3 consecutive runs after corrections.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">The takeaway: <strong>I am not immune to this, and I don't think anyone is.</strong> If you're writing Claude Code skills, you almost certainly have claims in your SKILL.md files that you'd want to correct. Not because you were careless, but because LLMs generate plausible-sounding facts that pass human review.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">Trying it on community skills</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">After auditing my own work, I wanted to see if the tool could be useful to the broader community. I ran veracity checks across 247 skills from 4 popular repos — not to find fault, but to understand the landscape and see if the patterns I found in my own work showed up elsewhere.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">The short answer: <strong>the ecosystem is in great shape.</strong> Here's what I found across 532 verified claims:</p>
+<br>
+<h3 style="margin-top:24px">The good news (and there's a lot of it)</h3>
+<br>
+<ul style="margin:8px 0">
+<li style="margin:4px 0"><strong>Zero fabricated papers</strong> across all 4 repos. Every citation I checked — Jumper 2021, Cialdini 2021, Kocher 1996, Fagan 1976 — was real, with correct authors and venues.</li>
+<li style="margin:4px 0"><strong>Zero invented libraries or tools.</strong> Every package, API, and tool referenced actually exists.</li>
+<li style="margin:4px 0"><strong>Zero malicious content.</strong> No prompt injection, no hidden instructions.</li>
+<li style="margin:4px 0"><strong>Security guidance is overwhelmingly accurate.</strong> All CWE numbers, vulnerability patterns, and cryptographic standards verified across Trail of Bits' 60 skills.</li>
+<li style="margin:4px 0"><strong>Academic citations are well-sourced.</strong> obra/superpowers cites Cialdini (2021) and Meincke et al. (2025) with correct stats, affiliations, and publishers.</li>
+<li style="margin:4px 0"><strong>Overall accuracy: 91%</strong> of verifiable claims checked out.</li>
+</ul>
+<br>
+<table style="border-collapse:collapse;width:100%;margin:16px 0">
+<tr><td style="border:1px solid #444;padding:8px">Repo</td><td style="border:1px solid #444;padding:8px">Skills</td><td style="border:1px solid #444;padding:8px">Claims</td><td style="border:1px solid #444;padding:8px">Accuracy</td></tr>
+<tr><td style="border:1px solid #444;padding:8px">anthropics/skills</td><td style="border:1px solid #444;padding:8px">17</td><td style="border:1px solid #444;padding:8px">54</td><td style="border:1px solid #444;padding:8px">94.4%</td></tr>
+<tr><td style="border:1px solid #444;padding:8px">trailofbits/skills</td><td style="border:1px solid #444;padding:8px">60</td><td style="border:1px solid #444;padding:8px">165</td><td style="border:1px solid #444;padding:8px">93.3%</td></tr>
+<tr><td style="border:1px solid #444;padding:8px">obra/superpowers</td><td style="border:1px solid #444;padding:8px">14</td><td style="border:1px solid #444;padding:8px">28</td><td style="border:1px solid #444;padding:8px">92.9%</td></tr>
+<tr><td style="border:1px solid #444;padding:8px">K-Dense-AI/claude-scientific-skills</td><td style="border:1px solid #444;padding:8px">156</td><td style="border:1px solid #444;padding:8px">285</td><td style="border:1px solid #444;padding:8px">88.4%</td></tr>
+<tr><td style="border:1px solid #444;padding:8px">**Total**</td><td style="border:1px solid #444;padding:8px">**247**</td><td style="border:1px solid #444;padding:8px">**532**</td><td style="border:1px solid #444;padding:8px">**90.8%**</td></tr>
+</table>
+<br>
+<h3 style="margin-top:24px">The main pattern: staleness</h3>
+<br>
+<p style="margin:8px 0;line-height:1.7">37% of all errors were <strong>stale database statistics</strong> — not fabrication, just entropy. Databases update; skill files don't. Ensembl "250 species" is now 348 vertebrate species (4,800+ eukaryotic genomes), ZINC "230M compounds" is now 5.9 billion, and so on. A <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">last_verified</code> field in skill frontmatter could catch this before users hit it.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">Limitations (being honest about what this can and can't do)</h2>
+<br>
+<p style="margin:8px 0 8px 24px"><strong>Single-pass verification</strong> — the community audit used one agent per claim via web search. My self-audits used 16 agents with multi-run convergence. The community results are therefore less thorough.</p>
+<p style="margin:8px 0 8px 24px"><strong>Web search recency bias</strong> — some "errors" may have been correct when the skill was written. I tried to note this where applicable.</p>
+<p style="margin:8px 0 8px 24px"><strong>Procedural claims untested</strong> — I verified factual assertions (numbers, citations, API endpoints), not whether the workflows produce correct results.</p>
+<p style="margin:8px 0 8px 24px"><strong>LLM-as-judge</strong> — the auditor agents are themselves LLMs, subject to the same hallucination risks. I mitigated the highest-impact findings by confirming them empirically via NCBI, PyPI, NVD, and HuggingFace APIs.</p>
+<p style="margin:8px 0 8px 24px"><strong>Meta-circularity</strong> — a tool built by an LLM, auditing content written by LLMs, checked by LLM agents. I can't fully escape this. The self-audit (62 → 96.5) and empirical API confirmations are my best defense.</p>
+<p style="margin:8px 0 8px 24px"><strong>No runtime testing</strong> — I checked registries and APIs for the top findings but didn't execute every code example in every skill.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">Where the real risk lives: newly created skills</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">One important caveat about these results: the repos I audited are <strong>well-established</strong>. anthropics/skills and obra/superpowers have tens of thousands of stars, active maintainers, and the benefit of many eyes over time. Trail of Bits brings professional security expertise. K-Dense-AI has domain scientists reviewing the content. These repos have had the benefit of community feedback, issue reports, and iterative refinement.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">The skills that worry me more are the ones that <em>haven't</em> had that scrutiny — skills freshly generated by an LLM in a single session, dropped into <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">~/.claude/skills/</code>, and never audited. That's exactly what happened with my own skills before I started self-auditing.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">I think running a veracity check after creating a new skill should be standard practice, the same way you'd run tests after writing code. It takes a few minutes and catches the kinds of errors that are invisible to the person who just wrote the file.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">This is especially relevant if you're working solo or outside a large engineering team. If you're at a company with code review culture, someone might catch a wrong citation or a stale API reference. But a lot of us — researchers, indie developers, solo practitioners — don't have that safety net. We're building with Claude Code in domains where we're the only expert in the room, and there's no second pair of eyes on the SKILL.md. Automated veracity checking fills that gap. It's not a replacement for peer review, but it's a meaningful substitute when peer review isn't available.</p>
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">What I'm sharing and why</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">Both skills (<code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/veracity-tweaked-555</code> and <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/context-engineer</code>) are open source at <a href="https://github.com/joonchungpersonal-dev/claude-skills" style="color:#58a6ff">joonchungpersonal-dev/claude-skills</a>, along with the full audit results (JSON files + consolidated report) from the community skills audit.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">I'm sharing these because the most valuable thing I learned is that <strong>self-auditing catches errors that survive human review</strong> — not because you're careless, but because LLM-generated errors are plausible by nature. They read well, sound right, and are sometimes wrong.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">I have no illusions that this is the most efficient implementation — I'm a scientist, not a software engineer. I'm confident there are people in this community who could make the verification faster, the token usage lower, the false positive rate better, and the convergence tighter. I welcome improvements, forks, and PRs. The methodology matters more to me than the implementation.</p>
+<br>
+<p style="margin:8px 0;line-height:1.7">Happy to answer questions about the methodology, the context engineering approach, or any specific finding. I'm here to contribute.</p>
+<br>
+<hr style="border:none;border-top:1px solid #444;margin:24px 0">
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Repo</strong>: <a href="https://github.com/joonchungpersonal-dev/claude-skills" style="color:#58a6ff">joonchungpersonal-dev/claude-skills</a></p>
+<p style="margin:8px 0;line-height:1.7"><strong>Full audit report</strong>: <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">external-audits/results/consolidated-report.md</code></p>
+<p style="margin:8px 0;line-height:1.7"><strong>Raw data</strong>: <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">external-audits/results/*.json</code> (all 532 claims with verdicts and evidence)</p>
+<br>
+<hr style="border:none;border-top:1px solid #444;margin:24px 0">
+<br>
+<h2 style="border-bottom:1px solid #333;padding-bottom:6px;margin-top:32px">Appendix: Veracity audit of this post</h2>
+<br>
+<p style="margin:8px 0;line-height:1.7">I ran the veracity process on this post before publishing. Here's what I found and corrected:</p>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Errors caught and fixed before posting:</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0"><em>"I had read that citation dozens of times"</em> — exaggeration. I had reviewed the attribution section but "dozens of times" overstates it. Replaced with an accurate description of why the error survived review.</li>
+<li style="margin:4px 0"><em>"Six convergence runs and 35 fixes later, it stabilized at 96.5/100"</em> — conflated two separate audit sessions. The initial self-audit (Feb 22) went from 62 → 80 → 84 over 3 runs. A separate convergence loop a week later (Mar 1) went from 74 → 96.5 over 6 runs with 35 fixes. Corrected to accurately describe both phases.</li>
+<li style="margin:4px 0"><em>"/grill presented as my own skill"</em> — misleading by omission. <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/grill</code> is a composite skill I built by consolidating patterns from GPTLens (Hu et al.), Trail of Bits' security config, obra/superpowers, IIA/OWASP standards, and Fagan inspection limits. My contribution was the 2-agent architecture, panel-tagging, dashboard logging, paper trail archiving, and the Think & Verify step. Corrected to properly credit sources.</li>
+<li style="margin:4px 0"><em>"invented a technique name"</em> — imprecise. The technique (Tool-MAD) is real. What was fabricated was the acronym expansion. Corrected.</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Claims verified as accurate:</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0">62/100 initial score, 80/100 after v1 fixes, 74/100 regression at v3 start, 96.5/100 after v3 convergence (confirmed via audit trail logs)</li>
+<li style="margin:4px 0">917K tokens per audit run (confirmed via MEMORY.md session logs), 200K context window (confirmed via context-engineer SKILL.md)</li>
+<li style="margin:4px 0">12 total fixes across 6 skills (confirmed via workflow-state.json)</li>
+<li style="margin:4px 0">All table numbers (532 claims, 49 errors, per-repo breakdowns) verified against aggregated JSON results</li>
+<li style="margin:4px 0">GPTLens fabricated title, COSO misattribution in multiple locations, context-engineer internal inconsistency — all confirmed via git history</li>
+<li style="margin:4px 0">Ensembl 348 species via REST API, PMID verification via NCBI E-utils, caracal via PyPI — all confirmed empirically</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Additional fixes during manual review:</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0"><em>Skill name wrong</em> — post said <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/veracity-555</code> throughout. Actual name is <code style="background:#2d2d2d;padding:2px 6px;border-radius:3px;font-size:0.9em">/veracity-tweaked-555</code>. Fixed in all occurrences.</li>
+<li style="margin:4px 0"><em>Score graph showed smooth climb</em> — the graph went 62 → 74 → 84 → 85 → ... which hid the actual 80 → 74 regression between v1 and v3. The v1 fixes introduced new errors (understated token cost, incomplete tool list) that the fresh v3 audit caught. Corrected graph to show the real trajectory: 62 → 80 → 74 → 85 → 91 → 95.7 → 96.1 → 96.5.</li>
+<li style="margin:4px 0"><em>"84/100 after initial fixes"</em> — actual v1-Run2 score was 80/100. Corrected.</li>
+<li style="margin:4px 0"><em>Fidelity degradation chart (90% → 75% → 55% → 30%)</em> — presented with specific percentages that were never rigorously measured. Removed the chart and replaced with honest prose about observed behavior.</li>
+<li style="margin:4px 0"><em>No mention of human-AI collaboration</em> — the entire project was built with Claude Code. Added explicit note about the collaboration and division of labor.</li>
+<li style="margin:4px 0"><em>"Encouraged (and humbled)"</em> — removed "and humbled" as editorializing.</li>
+<li style="margin:4px 0"><em>Two sentences overstating personal review</em> — deleted "The 62/100 starting score wasn't from a hastily written file..." and the GPTLens anecdote. Both were more dramatic than accurate.</li>
+<li style="margin:4px 0"><em>"Self-auditing works"</em> — vague. Replaced with "self-auditing catches errors that survive human review."</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Automated veracity Run 1 (score: 87.2%, 116 facts, 5 MIXED):</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0"><em>Chart said "8 audit runs"</em> — actually 9. The Feb 22 series had 3 runs (62 → 80 → 84), not 2. Corrected chart and prose.</li>
+<li style="margin:4px 0"><em>Appendix said "62 → 84"</em> — skipped the intermediate 80. Corrected to "62 → 80 → 84."</li>
+<li style="margin:4px 0"><em>Ensembl "250 species is now 4,800+ genomes"</em> — conflated species count with genome count. Corrected: "348 vertebrate species (4,800+ eukaryotic genomes)."</li>
+<li style="margin:4px 0"><em>"917K tokens confirmed via context-engineer SKILL.md"</em> — the 917K figure is from MEMORY.md session logs, not context-engineer SKILL.md. Corrected source attribution.</li>
+<li style="margin:4px 0"><em>GPTLens citation "correct authors, year, venue"</em> — the year was also wrong (2024 vs 2023). Removed "year" from list of correct elements.</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Automated veracity Run 2 (score: 90.7%, 124 facts, 0 MIXED):</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0">All 5 Run 1 fixes confirmed applied correctly. 0 regressions.</li>
+<li style="margin:4px 0"><em>"4 verification waves"</em> — Wave 0 is decomposition, not verification. Changed to "4 waves (1 decomposition + 3 verification)."</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Automated veracity Run 3 (score: 90.2%, 128 facts, 0 MIXED/FALSE):</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0">All prior fixes confirmed intact. 0 regressions across 3 runs.</li>
+<li style="margin:4px 0">All 15 numbers in the community audit table independently verified against raw JSON data.</li>
+<li style="margin:4px 0"><em>"5 separate locations"</em> for COSO misattribution — audit trail evidence shows 4 confirmed locations. Changed to "multiple locations."</li>
+<li style="margin:4px 0">Score is structurally capped at ~91-92% by 11 MOSTLY TRUE facts that cannot be upgraded with available evidence (single-measurement claims like "917K tokens," heuristics like "relational info is the first casualty," and counting methodology differences).</li>
+</ul>
+<br>
+<p style="margin:8px 0;line-height:1.7"><strong>Remaining caveats:</strong></p>
+<ul style="margin:8px 0">
+<li style="margin:4px 0"><em>"All CWE numbers... verified across Trail of Bits' 60 skills"</em> — slight overclaim. We verified the CWE numbers, vulnerability patterns, and standards that our auditor agents specifically checked, not literally every CWE reference in every file. Softened to "overwhelmingly accurate."</li>
+<li style="margin:4px 0"><em>"91% accuracy"</em> — this is the "not found to be wrong" rate: (532 - 49) / 532 = 90.8%. If you exclude the 51 unverifiable claims, the confirmed-correct rate is 432/481 = 89.8%. Both framings are defensible; I used the more generous one.</li>
+<li style="margin:4px 0"><em>"Both skills are open source"</em> — true at time of posting, contingent on the repo being public (it is).</li>
+</ul>
+<br></body></html>

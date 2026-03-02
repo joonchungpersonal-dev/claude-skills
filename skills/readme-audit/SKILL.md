@@ -12,9 +12,9 @@ Decomposes a README into atomic claims about the project, then verifies each cla
 ## Methodology
 
 **Published methods (inherited from veracity-555):**
-- **SAFE — Search-Augmented Factuality Evaluator (Google DeepMind, arXiv:2403.18802)**: Decompose document into atomic, self-contained facts (decompose + decontextualize) before verification
+- **SAFE — Search-Augmented Factuality Evaluator (Google DeepMind, arXiv:2403.18802)**: Decompose document into atomic, self-contained facts (decompose + revise to be self-contained) before verification
 - **6-Point Veracity Scale**: TRUE / MOSTLY TRUE / MIXED / MOSTLY FALSE / FALSE / UNVERIFIABLE (adapted from PolitiFact's 6-tier Truth-O-Meter: MIXED replaces HALF TRUE for technical neutrality; separately, PANTS ON FIRE is dropped as inapplicable to repo-grounded verification and UNVERIFIABLE is added to cover claims that cannot be confirmed or denied against repo state — these are distinct modifications, not parallel substitutions)
-- **Tool-MAD — Tool-augmented Multi-Agent Debate (arXiv:2601.04742)**: Agents with different retrieval tools (e.g., RAG vs web search) debate before a judge — up to 5.5% accuracy improvement over prior SOTA multi-agent debate frameworks
+- **Tool-MAD (arXiv:2601.04742)**: Multi-Agent Debate with tool augmentation — agents with different retrieval tools (e.g., RAG vs web search) debate before a judge — up to 5.5% accuracy improvement over prior SOTA (MADKE on FEVEROUS)
 
 **README-specific practices (custom):**
 - **Repo-grounded verification**: Every claim checked against files on disk, not just web searches
@@ -128,7 +128,7 @@ Wait for completion. The fact list + manifest summary become input for all subse
 
 ## Agent A0 — Structural Integrity Scanner (1 agent)
 
-Runs AFTER Wave 0, BEFORE Wave A. Catches structural and cross-referential errors that individual verification agents typically miss until later runs. Designed from empirical analysis of 49 fixes across 6 audit runs — targets the 4 error superclasses that account for 85% of late-discovered issues.
+Runs AFTER Wave 0, BEFORE Wave A. Catches structural and cross-referential errors that individual verification agents typically miss until later runs. Designed from empirical analysis of 35 fixes across 6 audit runs — targets the error types that account for the majority of late-discovered issues.
 
 Launch 1 agent (Task tool, `subagent_type: general-purpose`), receiving the Wave 0 fact list and the full target document:
 
