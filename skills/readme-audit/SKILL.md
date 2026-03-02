@@ -7,11 +7,11 @@ argument-hint: <path-to-repo> [runs=1]
 
 # README Audit — Project-Grounded Fact-Check
 
-Decomposes a README into atomic claims about the project, then verifies each claim against the actual repository state: files on disk, package manifests, code exports, git history, dependency locks, and live URLs. Built on veracity-555 architecture (SAFE decomposition + parallel verification waves) but domain-specialized for README drift detection. Shares wave structure, SAFE decomposition, supermajority consensus, inter-run review protocol, and logging schema pattern with veracity-555; the verification agents (A1-A5, B1-B5, C1-C5) are README-specific.
+Decomposes a README into atomic claims about the project, then verifies each claim against the actual repository state: files on disk, package manifests, code exports, git history, dependency locks, and live URLs. Built on veracity-tweaked-555 architecture (SAFE decomposition + parallel verification waves) but domain-specialized for README drift detection. Shares wave structure, SAFE decomposition, supermajority consensus, inter-run review protocol, and logging schema pattern with veracity-tweaked-555; the verification agents (A1-A5, B1-B5, C1-C5) are README-specific.
 
 ## Methodology
 
-**Published methods (inherited from veracity-555):**
+**Published methods (inherited from veracity-tweaked-555):**
 - **SAFE — Search-Augmented Factuality Evaluator (Google DeepMind, arXiv:2403.18802)**: Decompose document into atomic, self-contained facts (decompose + revise to be self-contained) before verification
 - **6-Point Veracity Scale**: TRUE / MOSTLY TRUE / MIXED / MOSTLY FALSE / FALSE / UNVERIFIABLE (adapted from PolitiFact's 6-tier Truth-O-Meter: MIXED replaces HALF TRUE for technical neutrality; separately, PANTS ON FIRE is dropped as inapplicable to repo-grounded verification and UNVERIFIABLE is added to cover claims that cannot be confirmed or denied against repo state — these are distinct modifications, not parallel substitutions)
 - **Tool-MAD (arXiv:2601.04742)**: Multi-Agent Debate with tool augmentation — agents with different retrieval tools (e.g., RAG vs web search) debate before a judge — up to 5.5% accuracy improvement over prior SOTA (MADKE on FEVEROUS)

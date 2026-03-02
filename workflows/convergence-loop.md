@@ -1,6 +1,6 @@
 # Workflow: Iterative Convergence Loop
 
-Pair `veracity-555` with `context-engineer` to run an audit that iterates until the document reaches a target quality threshold. This workflow was used to self-audit the veracity-555 SKILL.md itself, converging from 74/100 to 96.5/100 over 6 runs.
+Pair `veracity-tweaked-555` with `context-engineer` to run an audit that iterates until the document reaches a target quality threshold. This workflow was used to self-audit the veracity-tweaked-555 SKILL.md itself, converging from 74/100 to 96.5/100 over 6 runs.
 
 ## When to Use This
 
@@ -22,7 +22,7 @@ Pair `veracity-555` with `context-engineer` to run an audit that iterates until 
 │  └──────────────┬────────────────────────────────┘  │
 │                 │ read/write between runs             │
 │  ┌──────────────▼────────────────────────────────┐  │
-│  │  veracity-555 (per run)                        │  │
+│  │  veracity-tweaked-555 (per run)                        │  │
 │  │  Wave 0: Decompose → 283+ atomic facts         │  │
 │  │  Wave A: 5 agents verify sources                │  │
 │  │  Wave B: 5 agents check framing                 │  │
@@ -48,7 +48,7 @@ Before starting, decide:
 
 ### 2. Initialize with context-engineer
 
-The veracity-555 skill handles this automatically (Step 2.5) for runs >= 2, but if you want manual control:
+The veracity-tweaked-555 skill handles this automatically (Step 2.5) for runs >= 2, but if you want manual control:
 
 ```
 /context-engineer
@@ -64,7 +64,7 @@ This produces a state file and context engineering plan.
 ### 3. Run the audit
 
 ```
-/veracity-555 /path/to/document.md runs=N
+/veracity-tweaked-555 /path/to/document.md runs=N
 ```
 
 For convergence loops, set `runs` higher than you expect to need. The convergence criterion (Step 3g) will offer early stop when the target is reached.
@@ -95,7 +95,7 @@ The state file contains everything: score progression, active findings, deferred
 
 ## Worked Example: Veracity-555 Self-Audit (March 2026)
 
-The veracity-555 SKILL.md was audited by itself, with a convergence target of 95/100 for 3 consecutive runs.
+The veracity-tweaked-555 SKILL.md was audited by itself, with a convergence target of 95/100 for 3 consecutive runs.
 
 ### Run-by-Run Progression
 
@@ -188,7 +188,7 @@ The `relationships[]` array is the key context-engineer contribution. Without it
 
 ### For a different target document
 
-Replace the veracity-555 invocation target. The convergence loop works identically for any document type — personal websites, research papers, README files, grant applications. The domain expert agents (Wave D) will auto-adapt to the target's subject matter.
+Replace the veracity-tweaked-555 invocation target. The convergence loop works identically for any document type — personal websites, research papers, README files, grant applications. The domain expert agents (Wave D) will auto-adapt to the target's subject matter.
 
 ### For stricter convergence
 
@@ -204,4 +204,4 @@ Increase the target score or consecutive run requirement:
 
 ### For README-specific audits
 
-Use `readme-audit` instead of `veracity-555`. The readme-audit skill shares the same wave architecture and produces compatible state files. The convergence loop works identically — just swap the skill invocation.
+Use `readme-audit` instead of `veracity-tweaked-555`. The readme-audit skill shares the same wave architecture and produces compatible state files. The convergence loop works identically — just swap the skill invocation.

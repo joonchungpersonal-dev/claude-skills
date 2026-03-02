@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Reddit Post Draft</title>
+<html><head><meta charset="utf-8"><title>reddit-post</title>
 <style>
 body { max-width: 740px; margin: 40px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, segoe ui, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1a1a1b; background: #fff; }
 h1 { font-size: 1.5em; border-bottom: 1px solid #edeff1; padding-bottom: 8px; }
@@ -11,7 +11,6 @@ th { background: #f6f7f8; font-weight: 600; }
 code { background: #f6f7f8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
 pre { background: #f6f7f8; padding: 12px; border-radius: 4px; overflow-x: auto; }
 pre code { background: none; padding: 0; }
-blockquote { border-left: 4px solid #0079d3; margin: 1em 0; padding: 0.5em 1em; background: #f8f9fa; }
 a { color: #0079d3; text-decoration: none; }
 a:hover { text-decoration: underline; }
 strong { font-weight: 600; }
@@ -50,7 +49,7 @@ li { margin: 0.25em 0; }
 <h2>Running it on my own skills</h2>
 <p>Encouraged by the self-audit, I ran veracity checks on all 6 of my Claude Code skills before releasing them publicly. The results:</p>
 <ul>
-<li>The <code>/grill</code> skill — a composite code review tool based on sources recommended by Boris Cherny (creator of Claude Code): GPTLens (Hu et al.), Trail of Bits' <a href="https://github.com/trailofbits/claude-code-config">claude-code-config</a>, obra's <a href="https://github.com/obra/superpowers">superpowers</a>, and IIA/OWASP standards; Claude Code consolidated them, I designed the 2-agent architecture — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
+<li>The <code>/grill</code> skill — a composite code review tool built on GPTLens (Hu et al.), Trail of Bits' <a href="https://github.com/trailofbits/claude-code-config">claude-code-config</a>, obra's <a href="https://github.com/obra/superpowers">superpowers</a>, and IIA/OWASP standards; Claude Code consolidated the sources, I designed the 2-agent architecture — had a <strong>fabricated paper title</strong> in its attribution section. The citation crediting the GPTLens source paper looked perfect (authors, venue) but the title was fabricated and the year was wrong. The actual paper has a completely different name. The irony: the section designed to give proper credit contained a hallucinated citation.</li>
 <li>The same skill misattributed the 5C audit framework to COSO (a different standards body) instead of IIA Standards 2410/2420. This error appeared in multiple locations across the file.</li>
 <li>The <code>/context-engineer</code> skill had internal inconsistencies — the prose said "5-10K tokens" while a table in the same file said "5-15K tokens" for the same metric.</li>
 </ul>

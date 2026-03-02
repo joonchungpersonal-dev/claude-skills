@@ -505,7 +505,7 @@ Name the blind spots before the work starts, not after the crash.
 
 ## Recommended Pairing: Veracity-555
 
-The `veracity-555` multi-agent fact-checking skill is the canonical use case for context engineering. A single 3-run veracity audit deploys 48 agents, consumes 2.4-3M tokens, and produces cross-run findings that reference each other — hitting every chokepoint pattern described above.
+The `veracity-tweaked-555` multi-agent fact-checking skill is the canonical use case for context engineering. A single 3-run veracity audit deploys 48 agents, consumes 2.4-3M tokens, and produces cross-run findings that reference each other — hitting every chokepoint pattern described above.
 
 ### Why They Pair
 
@@ -532,7 +532,7 @@ The state file enables the Victory Condition: if the session crashes after Run 3
 
 ### Empirical Results
 
-The first paired deployment (veracity-555 self-audit, 6 runs to convergence):
+The first paired deployment (veracity-tweaked-555 self-audit, 6 runs to convergence):
 
 ```
 Runs: 6 | Agents deployed: 19 | Total fixes: 35
@@ -547,7 +547,7 @@ Zero compactions across 6 runs — the disk-as-memory architecture kept each run
 
 ### When to Invoke Separately
 
-Use `/context-engineer` independently (without veracity-555) for:
+Use `/context-engineer` independently (without veracity-tweaked-555) for:
 - Multi-file refactors touching 10+ files
 - Research synthesis reading 20+ papers
 - Any iterative workflow with convergence criteria

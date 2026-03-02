@@ -1,5 +1,5 @@
 ---
-name: veracity-555
+name: veracity-tweaked-555
 description: Run a parallel veracity audit on any document, website, or portfolio. Launches 16 agents per run in 4 waves (1 decomposition + 3 waves of 5 verification agents), each wave from a different angle. Default 3 runs with inter-run review; use runs=1 for quick checks.
 user-invocable: true
 argument-hint: <file-or-url> [runs=3]

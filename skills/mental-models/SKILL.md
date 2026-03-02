@@ -20,7 +20,7 @@ Part-to-model assignments are editorial. Part 7 (models 31-35) is an editorial e
 
 ## Veracity Provenance
 
-This model set was fact-checked using the veracity-555 multi-agent audit skill (7-run convergence loop, 29 corrections applied, final score: 97/100).
+This model set was fact-checked using the veracity-tweaked-555 multi-agent audit skill (7-run convergence loop, 29 corrections applied, final score: 97/100).
 
 ## Input
 
