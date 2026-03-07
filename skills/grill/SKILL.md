@@ -17,33 +17,35 @@ This skill extends a prompting technique into a formalized tool. Proper credit:
 - **GPTLens Auditor/Critic pattern**: Hu et al., "Large Language Model-Powered Smart Contract Vulnerability Detection: New Perspectives," IEEE TPS (2023). arXiv:2310.01152. The two-phase diverge/converge approach (auditor generates findings, critic validates) to reduce false positives originates from this paper.
 - **Trail of Bits security configuration**: [trailofbits/claude-code-config](https://github.com/trailofbits/claude-code-config). Security review patterns and hardened Claude Code configuration from the Trail of Bits security research team.
 - **obra/superpowers**: [obra/superpowers](https://github.com/obra/superpowers). An agentic skills framework and software development methodology by Jesse Vincent that informed the skill file structure and agent orchestration patterns.
-- **5C Audit Finding Format (IIA)**: The Condition-Criteria-Cause-Effect-Recommendation framework is a standard internal audit methodology associated with IIA Standards 2410/2420.
-- **OWASP Risk Rating Methodology**: OWASP Foundation. The Likelihood x Impact scoring matrix is adapted from the OWASP Risk Rating Methodology (owasp.org/www-community/OWASP_Risk_Rating_Methodology).
-- **Fagan Inspection limits**: The 400 LOC threshold references the SmartBear/Cisco study of 2,500 code reviews showing defect detection drops beyond that threshold, building on Fagan's original inspection methodology (1976).
+- **5C Audit Finding Format (IIA)**: The Condition-Criteria-Cause-Effect-Recommendation framework is an informal label for the IIA's "Five Attributes of a Finding" (Condition, Criteria, Cause, Effect, Recommendation), commonly associated with IIA Standards 2410/2420. The "5C" label is a mnemonic convenience — IIA's own terminology uses "Five Attributes," not "5C."
+- **OWASP Risk Rating Methodology**: OWASP Foundation. The Likelihood x Impact scoring matrix is a heavily simplified adaptation of the OWASP Risk Rating Methodology (owasp.org/www-community/OWASP_Risk_Rating_Methodology). OWASP's original uses 16 factors across 4 categories; this skill reduces it to 2 factors (Likelihood and Impact) on a 0–3 scale. The severity mapping (7–9=CRITICAL, 4–6=HIGH, 2–3=MEDIUM, 0–1=LOW) is custom to this skill, not a standard OWASP classification.
+- **Fagan Inspection limits**: The 400 LOC threshold originates from the SmartBear/Cisco study of 2,500 code reviews, not directly from Fagan (1976). Fagan's original work recommended ~250 LOC per session. The SmartBear study popularized the 400 LOC guideline based on empirical defect-detection drop-off data.
 
 **Modifications by Joon Chung**: Extended from Cherny's prompting technique into a structured skill. Consolidated from a 5-agent parallel architecture (`/plus-audit`) into a streamlined 2-agent sequential architecture (Comprehensive Reviewer + Critic). Added 5C audit format, OWASP risk scoring, panel-tagging system, dashboard logging integration, paper trail archiving, and the "Think & Verify" self-disproof step before reporting.
 
 ## Methodology
 
-- **5C Audit Finding Format**: Condition, Criteria, Cause, Effect, Recommendation (from internal audit practice, commonly associated with IIA standards)
-- **OWASP-Inspired Risk Rating**: Severity = Likelihood (0-3) x Impact (0-3), score 0-9 (simplified adaptation of the OWASP Risk Rating Methodology)
+- **5C Audit Finding Format**: Condition, Criteria, Cause, Effect, Recommendation — an informal mnemonic for IIA's "Five Attributes of a Finding" (IIA Standards 2410/2420)
+- **OWASP-Inspired Risk Rating**: Severity = Likelihood (0-3) x Impact (0-3), score 0-9. Heavily simplified from OWASP's 16-factor methodology down to 2 factors. Severity mapping (7–9=CRITICAL, 4–6=HIGH, 2–3=MEDIUM, 0–1=LOW) is custom to this skill. Note: scores 5, 7, and 8 are unreachable with integer inputs (e.g., no integer pair produces L×I=5)
 - **GPTLens Auditor/Critic Pattern**: Two-phase diverge/converge to eliminate false positives
 - **Think & Verify Prompting**: Reviewer must attempt to disprove findings before reporting
-- **Fagan Review Limits**: Files exceeding 400 LOC are flagged (defect detection drops beyond that threshold)
+- **SmartBear/Cisco Review Limits**: Files exceeding 400 LOC are flagged (from SmartBear/Cisco study of 2,500 code reviews; Fagan's 1976 original recommended ~250 LOC)
 
 ## Step 1: Identify files to audit
 
 If `$ARGUMENTS` specifies files or directories, use those. Otherwise, run:
 - `git diff --name-only HEAD` to find uncommitted changes
-- `git diff --name-only HEAD~1` to include the latest commit
+- `git diff --name-only HEAD~1` to include the latest commit (if HEAD~1 exists; on single-commit repos, use `git diff --cached --name-only` instead)
 
-Deduplicate the file list. Read each changed file in full before launching agents.
+Deduplicate the file list. If the file list is empty after deduplication, report "No changed files detected" and exit — do not launch agents.
 
-**Fagan limit note**: If any single file exceeds 400 LOC, flag it in the report header.
+Read each changed file in full before launching agents. If any single file exceeds 2,000 LOC, note this in the report header as a context-window risk — the agent may need to focus on the changed hunks rather than the full file.
+
+**SmartBear limit note**: If any single file exceeds 400 LOC, flag it in the report header (defect detection drops beyond this threshold per SmartBear/Cisco study).
 
 ## Step 2: Launch Comprehensive Reviewer agent
 
-Launch ONE agent using the Task tool with `subagent_type: general-purpose`. This agent covers ALL 7 review categories, pre-tagging each finding by panel.
+Launch ONE agent using the Agent tool with `subagent_type: general-purpose`. This agent covers ALL 7 review categories, pre-tagging each finding by panel.
 
 ### Agent 1: Comprehensive Reviewer
 
@@ -129,7 +131,7 @@ FORMAT each finding as:
 
 ## Step 3: Launch Critic agent (GPTLens pattern)
 
-After Agent 1 returns, launch a 2nd agent using the Task tool with `subagent_type: general-purpose`. This agent validates every finding to eliminate false positives.
+After Agent 1 returns, launch a 2nd agent using the Agent tool with `subagent_type: general-purpose`. This agent validates every finding to eliminate false positives.
 
 ### Agent 2: GPTLens Critic
 
@@ -196,7 +198,7 @@ After presenting findings, auto-detect and run the project's test suite:
 - If `Cargo.toml` exists: `cargo test`
 - If no test runner found, note "No test runner detected" in the report
 
-Report test results alongside audit findings.
+If tests fail, report the failures alongside audit findings but do not block the audit report. Test failures are informational context, not gating criteria for the audit itself.
 
 ## Step 6: Log audit results
 
@@ -291,7 +293,7 @@ Steps:
 6. If fixes were applied, capture `git diff` and save as `diff_applied.patch`
 7. Commit the new trail to the audit-trails git repo:
    ```
-   cd ~/.claude/audit-trails && git add -A && git commit -m "grill: <project> <timestamp>"
+   cd ~/.claude/audit-trails && git add grill/<timestamp>_<project>/ && git commit -m "grill: <project> <timestamp>"
    ```
 
 ## Step 7: Regenerate dashboard data
@@ -300,7 +302,7 @@ After updating `audit-log.json`, update the inline data block in the dashboard H
 
 1. Read the full contents of `~/.claude/audit-log.json`
 2. Read `~/.claude/audit-dashboard/index.html`
-3. Replace everything between `<script id="audit-data">` and the next `</script>` with:
+3. Locate the `<script id="audit-data">` tag. If the marker is not found, warn the user ("Dashboard HTML missing `<script id=\"audit-data\">` marker — skipping dashboard update") and skip this step. Otherwise, replace everything between the opening tag and the next `</script>` with:
    ```
    <script id="audit-data">
    // AUTO-GENERATED by /grill Step 7 — do not edit manually
